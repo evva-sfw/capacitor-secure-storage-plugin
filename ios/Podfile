@@ -5,14 +5,14 @@ def capacitor_pods
   use_frameworks!
   pod 'Capacitor', :path => '../node_modules/@capacitor/ios'
   pod 'CapacitorCordova', :path => '../node_modules/@capacitor/ios'
-  pod 'SwiftKeychainWrapper'
 end
 
 target 'Plugin' do
   capacitor_pods
+  pod 'SimpleKeychain', '~> 1.1.0'
 end
 
 target 'PluginTests' do
   capacitor_pods
-  pod 'SwiftKeychainWrapper'
+  pod 'SimpleKeychain', '~> 1.1.0'
 end

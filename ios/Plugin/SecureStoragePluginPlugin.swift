@@ -1,6 +1,6 @@
 import Foundation
 import Capacitor
-import SwiftKeychainWrapper
+import SimpleKeychain;
 
 /**
  * Please read the Capacitor iOS Plugin Development Guide
@@ -8,114 +8,108 @@ import SwiftKeychainWrapper
  */
 @objc(SecureStoragePlugin)
 public class SecureStoragePlugin: CAPPlugin {
-    var keychainwrapper: KeychainWrapper = KeychainWrapper.init(serviceName: "cap_sec")
     
     @objc func set(_ call: CAPPluginCall) {
         let key = call.getString("key") ?? ""
         let value = call.getString("value") ?? ""
-        let saveSuccessful: Bool = keychainwrapper.set(value, forKey: key, withAccessibility: .afterFirstUnlock)
-        if(saveSuccessful) {
-            call.resolve([
-                "value": saveSuccessful
-            ])
+        let accessibility = getAccessibility(a: call.getValue("accessibility") as? String)
+        
+        var simpleKeychain: SimpleKeychain = SimpleKeychain.init(service: "cap_sec", accessibility: accessibility);
+        
+        do {
+            try simpleKeychain.set(value, forKey: key);
+        } catch {
+            call.reject("Error setting value for key: '\(key)'")
         }
-        else {
-            call.reject("error")
-        }
+        
+        call.resolve(["value": value])
     }
     
     @objc func get(_ call: CAPPluginCall) {
         let key = call.getString("key") ?? ""
-        let hasValueDedicated = keychainwrapper.hasValue(forKey: key)
-        let hasValueStandard = KeychainWrapper.standard.hasValue(forKey: key)
+        let accessibility = getAccessibility(a: call.getValue("accessibility") as? String)
         
-        // copy standard value to dedicated and remove standard key
-        if (hasValueStandard && !hasValueDedicated) {
-            let syncValueSuccessful: Bool = keychainwrapper.set(
-                KeychainWrapper.standard.string(forKey: key) ?? "",
-                forKey: key,
-                withAccessibility: .afterFirstUnlock
-            )
-            let removeValueSuccessful: Bool = KeychainWrapper.standard.removeObject(forKey: key)
-            if (!syncValueSuccessful || !removeValueSuccessful) {
-                call.reject("error")
+        var simpleKeychain: SimpleKeychain = SimpleKeychain.init(service: "cap_sec", accessibility: accessibility);
+        
+        if let hasItem = try? simpleKeychain.hasItem(forKey: key), hasItem {
+            let value = try? simpleKeychain.string(forKey: key)
+            if let v = value, v != "" {
+                call.resolve(["value": v])
+            } else {
+                call.reject("Error getting value for key: '\(key)'")
             }
-        }
-        
-        if(hasValueDedicated || hasValueStandard) {
-            call.resolve([
-                "value": keychainwrapper.string(forKey: key) ?? ""
-            ])
-        }
-        else {
-            call.reject("Item with given key does not exist")
+        } else {
+            call.reject("Error key doesn't exist: '\(key)'")
         }
     }
-    
+
     @objc func keys(_ call: CAPPluginCall) {
-        let keys = keychainwrapper.allKeys();
-        call.resolve([
-            "value": Array(keys)
-        ])
+        let accessibility = getAccessibility(a: call.getValue("accessibility") as? String)
+        
+        var simpleKeychain: SimpleKeychain = SimpleKeychain.init(service: "cap_sec", accessibility: accessibility);
+        
+        if let keys = try? simpleKeychain.keys() {
+            call.resolve([
+                "value": Array(keys)
+            ])
+        } else {
+            call.reject("Error loading keys")
+        }
     }
-    
+
     @objc func remove(_ call: CAPPluginCall) {
         let key = call.getString("key") ?? ""
-        let hasValueDedicated = keychainwrapper.hasValue(forKey: key)
-        let hasValueStandard = KeychainWrapper.standard.hasValue(forKey: key)
+        let accessibility = getAccessibility(a: call.getValue("accessibility") as? String)
         
-        if(hasValueDedicated || hasValueStandard) {
-            KeychainWrapper.standard.removeObject(forKey: key);
-            let removeDedicatedSuccessful: Bool = keychainwrapper.removeObject(forKey: key)
-            if(removeDedicatedSuccessful) {
-                call.resolve([
-                    "value": removeDedicatedSuccessful
-                ])
+        var simpleKeychain: SimpleKeychain = SimpleKeychain.init(service: "cap_sec", accessibility: accessibility);
+        
+        if let hasItem = try? simpleKeychain.hasItem(forKey: key), hasItem {
+            do {
+                try simpleKeychain.deleteItem(forKey: key);
+                call.resolve()
+            } catch {
+                call.reject("Error removing key: \(key)")
             }
-            else {
-                call.reject("Remove failed")
-            }
-        }
-        else {
-            call.reject("Item with given key does not exist")
+        } else {
+            call.reject("Error key doesn't exist: '\(key)'")
         }
     }
     
     @objc func clear(_ call: CAPPluginCall) {
-        let keys = keychainwrapper.allKeys();
-        // cleanup standard keychain wrapper keys
+        let accessibility = getAccessibility(a: call.getValue("accessibility") as? String)
         
-        if(keys.count == 0) {
-            call.resolve([
-                "value": true
-            ])
-        }
-        else {            
-            for key in keys {
-                let hasValueStandard = KeychainWrapper.standard.hasValue(forKey: key)
-                if (hasValueStandard) {
-                    let removeStandardSuccessful = KeychainWrapper.standard.removeObject(forKey: key)
-                    if (!removeStandardSuccessful) {
-                        call.reject("error")
-                    }
-                }
-            }
-            
-            let clearSuccessful: Bool = keychainwrapper.removeAllKeys()
-            if(clearSuccessful) {
-                call.resolve([
-                    "value": clearSuccessful
-                ])
-            }
-            else {
-                call.reject("error")
-            }
+        var simpleKeychain: SimpleKeychain = SimpleKeychain.init(service: "cap_sec", accessibility: accessibility);
+        
+        do {
+            try simpleKeychain.deleteAll()
+            call.resolve()
+        } catch {
+            call.reject("Error removing all keys")
         }
     }
-    
+
     @objc func getPlatform(_ call: CAPPluginCall) {
         call.resolve([
             "value": "ios"
         ])
+    }
+
+    // MARK: - Helper
+
+    private func getAccessibility(a: String?) -> Accessibility {
+        switch (a) {
+        case "whenUnlocked":
+            return Accessibility.whenUnlocked;
+        case "whenUnlockedThisDeviceOnly":
+            return Accessibility.whenUnlockedThisDeviceOnly;
+        case "whenPasscodeSetThisDeviceOnly":
+            return Accessibility.whenPasscodeSetThisDeviceOnly;
+        case "afterFirstUnlock":
+            return Accessibility.afterFirstUnlock;
+        case "afterFirstUnlockThisDeviceOnly":
+            return Accessibility.afterFirstUnlockThisDeviceOnly;
+        default:
+            return Accessibility.afterFirstUnlockThisDeviceOnly;
+        }
     }
 }
