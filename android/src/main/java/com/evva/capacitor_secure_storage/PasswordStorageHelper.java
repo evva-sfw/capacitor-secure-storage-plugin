@@ -1,4 +1,4 @@
-package com.whitestein.securestorage;
+package com.evva.capacitor_secure_storage;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
@@ -13,7 +13,6 @@ import android.util.Log;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.math.BigInteger;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.KeyFactory;
@@ -29,30 +28,22 @@ import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
 import java.security.spec.AlgorithmParameterSpec;
 import java.security.spec.InvalidKeySpecException;
-import java.util.Calendar;
-import java.util.GregorianCalendar;
 import java.util.Set;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
-import javax.security.auth.x500.X500Principal;
-
 
 public class PasswordStorageHelper {
 
     private static final String LOG_TAG = PasswordStorageHelper.class.getSimpleName();
     private static final String PREFERENCES_FILE = "cap_sec";
 
-    private PasswordStorageImpl passwordStorage = null;
+    private PasswordStorageImpl passwordStorage;
 
     public PasswordStorageHelper(Context context) {
-        if (android.os.Build.VERSION.SDK_INT < 18) {
-            passwordStorage = new PasswordStorageHelper_SDK16();
-        } else {
-            passwordStorage = new PasswordStorageHelper_SDK18();
-        }
+        passwordStorage = new PasswordStorageHelper_SDK18();
 
         boolean isInitialized = false;
 
@@ -76,7 +67,9 @@ public class PasswordStorageHelper {
         return passwordStorage.getData(key);
     }
 
-    public String[] keys() { return passwordStorage.keys(); }
+    public String[] keys() {
+        return passwordStorage.keys();
+    }
 
     public void remove(String key) {
         passwordStorage.remove(key);
@@ -110,6 +103,7 @@ public class PasswordStorageHelper {
         }
 
         @Override
+        @SuppressLint("ApplySharedPref")
         public void setData(String key, byte[] data) {
             if (data == null)
                 return;
@@ -129,10 +123,11 @@ public class PasswordStorageHelper {
         @Override
         public String[] keys() {
             Set<String> keySet = preferences.getAll().keySet();
-            return keySet.toArray(new String[keySet.size()]);
+            return keySet.toArray(new String[0]);
         }
 
         @Override
+        @SuppressLint("ApplySharedPref")
         public void remove(String key) {
             Editor editor = preferences.edit();
             editor.remove(key);
@@ -140,6 +135,7 @@ public class PasswordStorageHelper {
         }
 
         @Override
+        @SuppressLint("ApplySharedPref")
         public void clear() {
             Editor editor = preferences.edit();
             editor.clear();
@@ -169,7 +165,7 @@ public class PasswordStorageHelper {
             try {
                 ks = KeyStore.getInstance(KEYSTORE_PROVIDER_ANDROID_KEYSTORE);
 
-                //Use null to load Keystore with default parameters.
+                // Use null to load Keystore with default parameters.
                 ks.load(null);
 
                 // Check if Private and Public already keys exists. If so we don't need to generate them again
@@ -181,35 +177,17 @@ public class PasswordStorageHelper {
                         return true;
                     }
                 }
-            } catch (Exception ex) {
+            } catch (Exception e) {
+                Log.e(LOG_TAG, "init(): failed to get keystore keys");
                 return false;
             }
 
-            // Create a start and end time, for the validity range of the key pair that's about to be
-            // generated.
-            Calendar start = new GregorianCalendar();
-            Calendar end = new GregorianCalendar();
-            end.add(Calendar.YEAR, 10);
-
             // Specify the parameters object which will be passed to KeyPairGenerator
             AlgorithmParameterSpec spec;
-            if (android.os.Build.VERSION.SDK_INT < 23) {
-                spec = new android.security.KeyPairGeneratorSpec.Builder(context)
-                        // Alias - is a key for your KeyPair, to obtain it from Keystore in future.
-                        .setAlias(alias)
-                        // The subject used for the self-signed certificate of the generated pair
-                        .setSubject(new X500Principal("CN=" + alias))
-                        // The serial number used for the self-signed certificate of the generated pair.
-                        .setSerialNumber(BigInteger.valueOf(1337))
-                        // Date range of validity for the generated pair.
-                        .setStartDate(start.getTime()).setEndDate(end.getTime())
-                        .build();
-            } else {
-                spec = new KeyGenParameterSpec.Builder(alias, KeyProperties.PURPOSE_DECRYPT)
-                        .setDigests(KeyProperties.DIGEST_SHA256, KeyProperties.DIGEST_SHA512)
-                        .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_RSA_PKCS1)
-                        .build();
-            }
+            spec = new KeyGenParameterSpec.Builder(alias, KeyProperties.PURPOSE_DECRYPT)
+                    .setDigests(KeyProperties.DIGEST_SHA256, KeyProperties.DIGEST_SHA512)
+                    .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_RSA_PKCS1)
+                    .build();
 
             // Initialize a KeyPair generator using the the intended algorithm (in this example, RSA
             // and the KeyStore. This example uses the AndroidKeyStore.
@@ -219,34 +197,33 @@ public class PasswordStorageHelper {
                 kpGenerator.initialize(spec);
                 // Generate private/public keys
                 kpGenerator.generateKeyPair();
-            } catch (NoSuchAlgorithmException | InvalidAlgorithmParameterException | NoSuchProviderException e) {
-                e.printStackTrace();
+            } catch (NoSuchAlgorithmException | InvalidAlgorithmParameterException |
+                     NoSuchProviderException e) {
+                Log.e(LOG_TAG, "init(): failed to generate key pair");
             }
 
             // Check if device support Hardware-backed keystore
             try {
                 boolean isHardwareBackedKeystoreSupported;
-                if (android.os.Build.VERSION.SDK_INT < 23) {
-                    isHardwareBackedKeystoreSupported = KeyChain.isBoundKeyAlgorithm(KeyProperties.KEY_ALGORITHM_RSA);
-                } else {
-                    PrivateKey privateKey = (PrivateKey) ks.getKey(alias, null);
-                    KeyChain.isBoundKeyAlgorithm(KeyProperties.KEY_ALGORITHM_RSA);
-                    KeyFactory keyFactory = KeyFactory.getInstance(privateKey.getAlgorithm(), "AndroidKeyStore");
-                    KeyInfo keyInfo = keyFactory.getKeySpec(privateKey, KeyInfo.class);
-                    isHardwareBackedKeystoreSupported = keyInfo.isInsideSecureHardware();
-                }
-                Log.d(LOG_TAG, "Hardware-Backed Keystore Supported: " + isHardwareBackedKeystoreSupported);
-            } catch (KeyStoreException | NoSuchAlgorithmException | UnrecoverableKeyException | InvalidKeySpecException | NoSuchProviderException e) {
+                PrivateKey privateKey = (PrivateKey) ks.getKey(alias, null);
+                KeyChain.isBoundKeyAlgorithm(KeyProperties.KEY_ALGORITHM_RSA);
+                KeyFactory keyFactory = KeyFactory.getInstance(privateKey.getAlgorithm(), "AndroidKeyStore");
+                KeyInfo keyInfo = keyFactory.getKeySpec(privateKey, KeyInfo.class);
+                isHardwareBackedKeystoreSupported = keyInfo.isInsideSecureHardware();
+                Log.d(LOG_TAG, "init(): hardware-backed keystore supported: " + isHardwareBackedKeystoreSupported);
+            } catch (KeyStoreException | NoSuchAlgorithmException | UnrecoverableKeyException |
+                     InvalidKeySpecException | NoSuchProviderException e) {
+                Log.e(LOG_TAG, "init(): hardware-backed keystore not supported");
             }
 
             return true;
         }
 
         @Override
+        @SuppressLint("ApplySharedPref")
         public void setData(String key, byte[] data) {
-            KeyStore ks = null;
             try {
-                ks = KeyStore.getInstance(KEYSTORE_PROVIDER_ANDROID_KEYSTORE);
+                KeyStore ks = KeyStore.getInstance(KEYSTORE_PROVIDER_ANDROID_KEYSTORE);
 
                 ks.load(null);
                 if (ks.getCertificate(alias) == null) return;
@@ -264,24 +241,26 @@ public class PasswordStorageHelper {
                 editor.putString(key, value);
                 editor.commit();
             } catch (NoSuchAlgorithmException | InvalidKeyException | NoSuchPaddingException
-                    | IllegalBlockSizeException | BadPaddingException | NoSuchProviderException
-                    | InvalidKeySpecException | KeyStoreException | CertificateException | IOException e) {
-                e.printStackTrace();
+                     | IllegalBlockSizeException | BadPaddingException | NoSuchProviderException
+                     | InvalidKeySpecException | KeyStoreException | CertificateException |
+                     IOException e) {
+                Log.e(LOG_TAG, "setData(): failed to set data for key: " + key);
             }
         }
 
         @Override
         public byte[] getData(String key) {
-            KeyStore ks = null;
             try {
-                ks = KeyStore.getInstance(KEYSTORE_PROVIDER_ANDROID_KEYSTORE);
+                KeyStore ks = KeyStore.getInstance(KEYSTORE_PROVIDER_ANDROID_KEYSTORE);
                 ks.load(null);
                 PrivateKey privateKey = (PrivateKey) ks.getKey(alias, null);
                 return decrypt(privateKey, preferences.getString(key, null));
-            } catch (KeyStoreException | NoSuchAlgorithmException | CertificateException | IOException
-                    | UnrecoverableEntryException | InvalidKeyException | NoSuchPaddingException
-                    | IllegalBlockSizeException | BadPaddingException | NoSuchProviderException e) {
-               e.printStackTrace();
+            } catch (KeyStoreException | NoSuchAlgorithmException | CertificateException |
+                     IOException
+                     | UnrecoverableEntryException | InvalidKeyException | NoSuchPaddingException
+                     | IllegalBlockSizeException | BadPaddingException |
+                     NoSuchProviderException e) {
+                Log.e(LOG_TAG, "getData(): failed to get data for key: " + key);
             }
             return null;
         }
@@ -289,10 +268,11 @@ public class PasswordStorageHelper {
         @Override
         public String[] keys() {
             Set<String> keySet = preferences.getAll().keySet();
-            return keySet.toArray(new String[keySet.size()]);
+            return keySet.toArray(new String[0]);
         }
 
         @Override
+        @SuppressLint("ApplySharedPref")
         public void remove(String key) {
             Editor editor = preferences.edit();
             editor.remove(key);
@@ -300,13 +280,14 @@ public class PasswordStorageHelper {
         }
 
         @Override
+        @SuppressLint("ApplySharedPref")
         public void clear() {
             Editor editor = preferences.edit();
             editor.clear();
             editor.commit();
         }
 
-        private static int KEY_LENGTH = 2048;
+        private static final int KEY_LENGTH = 2048;
 
         @SuppressLint("TrulyRandom")
         private static String encrypt(PublicKey encryptionKey, byte[] data) throws NoSuchAlgorithmException,
@@ -331,7 +312,7 @@ public class PasswordStorageHelper {
                     try {
                         byteArrayOutputStream.write(tmpData);
                     } catch (IOException e) {
-                        e.printStackTrace();
+                        Log.e(LOG_TAG, "encrypt(): failed to write data to output stream");
                     }
                     position += limit;
                 }
@@ -364,7 +345,7 @@ public class PasswordStorageHelper {
                     try {
                         byteArrayOutputStream.write(tmpData);
                     } catch (IOException e) {
-                        e.printStackTrace();
+                        Log.e(LOG_TAG, "decrypt(): failed to write data to output stream");
                     }
                     position += limit;
                 }

@@ -1,15 +1,15 @@
-package com.whitestein.securestorage;
+package com.evva.capacitor_secure_storage;
 
 import android.content.Context;
+
 import com.getcapacitor.JSArray;
 import com.getcapacitor.JSObject;
-import com.getcapacitor.NativePlugin;
 import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
 import com.getcapacitor.PluginMethod;
 import com.getcapacitor.annotation.CapacitorPlugin;
-import java.nio.charset.Charset;
-import java.util.Set;
+
+import java.nio.charset.StandardCharsets;
 
 @CapacitorPlugin(name = "SecureStoragePlugin")
 public class SecureStoragePluginPlugin extends Plugin {
@@ -30,7 +30,7 @@ public class SecureStoragePluginPlugin extends Plugin {
     public void set(PluginCall call) {
         String key = call.getString("key");
         String value = call.getString("value");
-        if(value == null) {
+        if (value == null) {
             value = "";
         }
 
@@ -60,10 +60,9 @@ public class SecureStoragePluginPlugin extends Plugin {
     public void remove(PluginCall call) {
         String key = call.getString("key");
         try {
-            if(this.has(key)) {
+            if (this.has(key)) {
                 call.resolve(this._remove(key));
-            }
-            else {
+            } else {
                 call.reject("Item with given key does not exist");
             }
         } catch (Exception exception) {
@@ -86,25 +85,21 @@ public class SecureStoragePluginPlugin extends Plugin {
     }
 
     public JSObject _set(String key, String value) {
-        this.passwordStorageHelper.setData(key, value.getBytes(Charset.forName("UTF-8")));
+        this.passwordStorageHelper.setData(key, value.getBytes(StandardCharsets.UTF_8));
         JSObject ret = new JSObject();
         ret.put("value", true);
         return ret;
     }
 
-    public boolean has(String key) throws Exception {
+    public boolean has(String key) {
         byte[] buffer = this.passwordStorageHelper.getData(key);
-        if (buffer != null) {
-            return true;
-        } else {
-            return false;
-        }
+        return buffer != null;
     }
 
     public JSObject _get(String key) throws Exception {
         byte[] buffer = this.passwordStorageHelper.getData(key);
         if (buffer != null) {
-            String value = new String(buffer, Charset.forName("UTF-8"));
+            String value = new String(buffer, StandardCharsets.UTF_8);
             JSObject ret = new JSObject();
             ret.put("value", value);
             return ret;

@@ -1,14 +1,16 @@
 package com.getcapacitor.android;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import android.content.Context;
+
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.evva.capacitor_secure_storage.SecureStoragePluginPlugin;
 import com.getcapacitor.JSArray;
 import com.getcapacitor.JSObject;
-import com.whitestein.securestorage.SecureStoragePluginPlugin;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
