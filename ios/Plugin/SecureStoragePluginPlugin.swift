@@ -1,6 +1,6 @@
-import Foundation
 import Capacitor
-import SimpleKeychain;
+import Foundation
+import SimpleKeychain
 
 /**
  * Please read the Capacitor iOS Plugin Development Guide
@@ -8,33 +8,35 @@ import SimpleKeychain;
  */
 @objc(SecureStoragePlugin)
 public class SecureStoragePlugin: CAPPlugin {
-    
-    @objc func set(_ call: CAPPluginCall) {
+
+    @objc
+    func set(_ call: CAPPluginCall) {
         let key = call.getString("key") ?? ""
         let value = call.getString("value") ?? ""
-        let accessibility = getAccessibility(a: call.getValue("accessibility") as? String)
-        
-        var simpleKeychain: SimpleKeychain = SimpleKeychain.init(service: "cap_sec", accessibility: accessibility);
-        
+        let accessibility = self.getAccessibility(a: call.getValue("accessibility") as? String)
+
+        let simpleKeychain = SimpleKeychain(service: "cap_sec", accessibility: accessibility)
+
         do {
-            try simpleKeychain.set(value, forKey: key);
+            try simpleKeychain.set(value, forKey: key)
         } catch {
             call.reject("Error setting value for key: '\(key)'")
         }
-        
+
         call.resolve(["value": value])
     }
-    
-    @objc func get(_ call: CAPPluginCall) {
+
+    @objc
+    func get(_ call: CAPPluginCall) {
         let key = call.getString("key") ?? ""
-        let accessibility = getAccessibility(a: call.getValue("accessibility") as? String)
-        
-        var simpleKeychain: SimpleKeychain = SimpleKeychain.init(service: "cap_sec", accessibility: accessibility);
-        
+        let accessibility = self.getAccessibility(a: call.getValue("accessibility") as? String)
+
+        let simpleKeychain = SimpleKeychain(service: "cap_sec", accessibility: accessibility)
+
         if let hasItem = try? simpleKeychain.hasItem(forKey: key), hasItem {
             let value = try? simpleKeychain.string(forKey: key)
-            if let v = value, v != "" {
-                call.resolve(["value": v])
+            if let val = value, val != "" {
+                call.resolve(["value": val])
             } else {
                 call.reject("Error getting value for key: '\(key)'")
             }
@@ -43,29 +45,31 @@ public class SecureStoragePlugin: CAPPlugin {
         }
     }
 
-    @objc func keys(_ call: CAPPluginCall) {
-        let accessibility = getAccessibility(a: call.getValue("accessibility") as? String)
-        
-        var simpleKeychain: SimpleKeychain = SimpleKeychain.init(service: "cap_sec", accessibility: accessibility);
-        
+    @objc
+    func keys(_ call: CAPPluginCall) {
+        let accessibility = self.getAccessibility(a: call.getValue("accessibility") as? String)
+
+        let simpleKeychain = SimpleKeychain(service: "cap_sec", accessibility: accessibility)
+
         if let keys = try? simpleKeychain.keys() {
             call.resolve([
-                "value": Array(keys)
+                "value": Array(keys),
             ])
         } else {
             call.reject("Error loading keys")
         }
     }
 
-    @objc func remove(_ call: CAPPluginCall) {
+    @objc
+    func remove(_ call: CAPPluginCall) {
         let key = call.getString("key") ?? ""
-        let accessibility = getAccessibility(a: call.getValue("accessibility") as? String)
-        
-        var simpleKeychain: SimpleKeychain = SimpleKeychain.init(service: "cap_sec", accessibility: accessibility);
-        
+        let accessibility = self.getAccessibility(a: call.getValue("accessibility") as? String)
+
+        let simpleKeychain = SimpleKeychain(service: "cap_sec", accessibility: accessibility)
+
         if let hasItem = try? simpleKeychain.hasItem(forKey: key), hasItem {
             do {
-                try simpleKeychain.deleteItem(forKey: key);
+                try simpleKeychain.deleteItem(forKey: key)
                 call.resolve()
             } catch {
                 call.reject("Error removing key: \(key)")
@@ -74,12 +78,13 @@ public class SecureStoragePlugin: CAPPlugin {
             call.reject("Error key doesn't exist: '\(key)'")
         }
     }
-    
-    @objc func clear(_ call: CAPPluginCall) {
-        let accessibility = getAccessibility(a: call.getValue("accessibility") as? String)
-        
-        var simpleKeychain: SimpleKeychain = SimpleKeychain.init(service: "cap_sec", accessibility: accessibility);
-        
+
+    @objc
+    func clear(_ call: CAPPluginCall) {
+        let accessibility = self.getAccessibility(a: call.getValue("accessibility") as? String)
+
+        let simpleKeychain = SimpleKeychain(service: "cap_sec", accessibility: accessibility)
+
         do {
             try simpleKeychain.deleteAll()
             call.resolve()
@@ -88,28 +93,29 @@ public class SecureStoragePlugin: CAPPlugin {
         }
     }
 
-    @objc func getPlatform(_ call: CAPPluginCall) {
+    @objc
+    func getPlatform(_ call: CAPPluginCall) {
         call.resolve([
-            "value": "ios"
+            "value": "ios",
         ])
     }
 
     // MARK: - Helper
 
     private func getAccessibility(a: String?) -> Accessibility {
-        switch (a) {
+        switch a {
         case "whenUnlocked":
-            return Accessibility.whenUnlocked;
+            return Accessibility.whenUnlocked
         case "whenUnlockedThisDeviceOnly":
-            return Accessibility.whenUnlockedThisDeviceOnly;
+            return Accessibility.whenUnlockedThisDeviceOnly
         case "whenPasscodeSetThisDeviceOnly":
-            return Accessibility.whenPasscodeSetThisDeviceOnly;
+            return Accessibility.whenPasscodeSetThisDeviceOnly
         case "afterFirstUnlock":
-            return Accessibility.afterFirstUnlock;
+            return Accessibility.afterFirstUnlock
         case "afterFirstUnlockThisDeviceOnly":
-            return Accessibility.afterFirstUnlockThisDeviceOnly;
+            return Accessibility.afterFirstUnlockThisDeviceOnly
         default:
-            return Accessibility.afterFirstUnlockThisDeviceOnly;
+            return Accessibility.afterFirstUnlockThisDeviceOnly
         }
     }
 }

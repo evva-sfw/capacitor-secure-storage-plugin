@@ -5,7 +5,7 @@
 // @testable import Plugin
 //
 // class PluginTests: XCTestCase {
-    
+
 //    func setupDedicatedWrapper() -> KeychainWrapper {
 //        let wrapper = KeychainWrapper.init(serviceName: "cap_sec")
 //        wrapper.removeAllKeys()
@@ -244,4 +244,4 @@
 //
 //        plugin.getPlatform(call!)
 //    }
-}
+// }
