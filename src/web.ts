@@ -1,8 +1,8 @@
 import { WebPlugin } from '@capacitor/core';
 
-import type { SecureStoragePluginPlugin } from './definitions';
+import type { SecureStoragePluginInterface } from './definitions';
 
-export class SecureStoragePluginWeb extends WebPlugin implements SecureStoragePluginPlugin {
+export class SecureStoragePluginWeb extends WebPlugin implements SecureStoragePluginInterface {
   PREFIX = 'cap_sec_';
 
   async get(options: { key: string }): Promise<{ value: string }> {

@@ -12,7 +12,7 @@ import com.getcapacitor.annotation.CapacitorPlugin;
 import java.nio.charset.StandardCharsets;
 
 @CapacitorPlugin(name = "SecureStoragePlugin")
-public class SecureStoragePluginPlugin extends Plugin {
+public class SecureStoragePlugin extends Plugin {
 
     private PasswordStorageHelper passwordStorageHelper;
 

@@ -1,4 +1,4 @@
-export interface SecureStoragePluginPlugin {
+export interface SecureStoragePluginInterface {
   get: (options: { key: string; accessibility?: string }) => Promise<{ value: string }>;
   set: (options: {
     key: string;

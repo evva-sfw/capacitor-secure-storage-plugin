@@ -1,8 +1,8 @@
 import { registerPlugin } from '@capacitor/core';
 
-import type { SecureStoragePluginPlugin } from './definitions';
+import { type SecureStoragePluginInterface } from './definitions';
 
-const SecureStoragePlugin = registerPlugin<SecureStoragePluginPlugin>('SecureStoragePlugin', {
+const SecureStoragePlugin = registerPlugin<SecureStoragePluginInterface>('SecureStoragePlugin', {
   web: async () => await import('./web').then((m) => new m.SecureStoragePluginWeb()),
 });
 
