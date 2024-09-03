@@ -7,6 +7,9 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        api-level: [ 29 ]
     steps:
       - uses: actions/checkout@v4
       - name: Set up JDK 17
@@ -55,6 +58,6 @@ jobs:
       - name: Verify Android
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: 29
+          api-level: ${{ matrix.api-level }}
           working-directory: android/
           script: ./gradlew clean build test connectedAndroidTest
