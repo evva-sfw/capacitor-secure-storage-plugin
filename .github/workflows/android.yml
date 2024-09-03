@@ -54,7 +54,7 @@ jobs:
           key: avd-${{ matrix.api-level }}
       - run: npm i
       - name: Verify Plugin
-        run: npm run build
+        run: npm run verify:web
       - name: Verify Android
         uses: reactivecircus/android-emulator-runner@v2
         with:
