@@ -1,14 +1,13 @@
-name: Clear caches created by PR
+name: Cache
 on:
   pull_request:
     types:
       - closed
-
 jobs:
-  cleanup:
+  clear:
     runs-on: ubuntu-latest
     steps:
-      - name: Cache Clear
+      - name: Execute
         run: |
           gh extension install actions/gh-actions-cache
 
