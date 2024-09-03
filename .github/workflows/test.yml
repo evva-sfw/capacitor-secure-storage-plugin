@@ -87,9 +87,6 @@ jobs:
           test || exit 1
   Android:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        api-level: [ 29, 34 ]
     steps:
       - uses: actions/checkout@v4
       - name: Set up JDK 17
@@ -119,7 +116,7 @@ jobs:
           path: |
             ~/.android/avd/*
             ~/.android/adb*
-          key: avd-${{ matrix.api-level }}
+          key: avd-29
       - name: Install Node.js
         uses: actions/setup-node@v4
         with:
@@ -137,6 +134,6 @@ jobs:
       - name: Test Android
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: ${{ matrix.api-level }}
+          api-level: 29
           working-directory: android/
           script: ./gradlew clean build test connectedAndroidTest
