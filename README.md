@@ -2,9 +2,6 @@
 
 Capacitor plugin for storing string values securly on iOS and Android.
 
-## ToDo
-- Adapt test cases for iOS using SimpleKeychain instead of SwiftKeychainWrapper (pod has already been removed)
-
 ## How to install
 
 ### Capacitor 5
