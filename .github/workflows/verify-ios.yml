@@ -56,11 +56,14 @@ jobs:
       - name: Verify Plugin
         run: npm run verify:web
       - name: Verify iOS
+        env:
+          DEVELOPER_DIR: /Applications/Xcode_15.4.app
         run: |
           cd ios
           xcodebuild \
+          -quiet \
           -workspace Plugin.xcworkspace \
           -scheme Plugin \
-          -sdk iphonesimulator
+          -sdk iphonesimulator \
           -destination 'platform=iOS Simulator,name=iPhone 15,OS=17.4' \
           test || exit 1
