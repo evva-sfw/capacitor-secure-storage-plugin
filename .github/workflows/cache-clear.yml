@@ -1,4 +1,4 @@
-name: cleanup caches by a branch
+name: Clear caches created by PR
 on:
   pull_request:
     types:

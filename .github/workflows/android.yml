@@ -1,4 +1,4 @@
-name: Build Android
+name: Verify Android
 on:
   push:
     branches: [ 'main' ]
@@ -33,9 +33,11 @@ jobs:
         with:
           path: |
             .gradle
-            example/android/.gradle
+            test-app/android/.gradle
             ~/.gradle/caches
           key: gradle
       - run: npm i
-      - name: Build Android
-        run: npm run build && npm run verify:android
+      - name: Build Plugin
+        run: npm run build
+      - name: Verify Android
+        run: cd android && ./gradlew clean build test connectedAndroidTest
