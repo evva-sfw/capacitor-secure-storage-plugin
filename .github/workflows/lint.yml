@@ -17,10 +17,15 @@ jobs:
       attestations: write
     steps:
       - uses: actions/checkout@v3
-      - name: Setup nodejs
+      - name: Install Homebrew
+        id: homebrew
+        run: /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+      - name: Install Node.js
         uses: actions/setup-node@v4
         with:
           node-version: lts/*
+      - name: Install swiftlint
+        run: brew install swiftlint
       - name: Cache node_modules
         id: node-modules
         uses: actions/cache@v4
@@ -29,11 +34,6 @@ jobs:
             node_modules
             test-app/node_modules
           key: node-modules
-      - name: Install Homebrew
-        id: homebrew
-        run: /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-      - name: Install swiftlint
-        run: brew install swiftlint
       - run: npm i
       - run: npm run lint
       - run: npm pack
