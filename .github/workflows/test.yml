@@ -24,46 +24,67 @@ jobs:
       - name: Test Web
         run: npm run verify:web
   iOS:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        api-level: [ 29 ]
+    runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Set up JDK 17
-        uses: actions/setup-java@v3
+      - name: Install Node.js
+        uses: actions/setup-node@v4
         with:
-          java-version: '17'
-          distribution: 'temurin'
-      - name: Install Android SDK
-        uses: android-actions/setup-android@v3
-      - name: Cache Gradle
+          node-version: lts/*
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+          bundler-cache: true
+      - uses: SwiftyLab/setup-swift@latest
+        with:
+          swift-version: '5.10.0'
+      - name: Get Swift Version
+        run: swift --version
+      - name: Get Xcode version
+        env:
+          DEVELOPER_DIR: /Applications/Xcode_15.4.app
+        run: xcodebuild -version
+      - name: Cache Pods
+        id: pods
         uses: actions/cache@v4
         with:
           path: |
-            android/.gradle
-            test-app/android/.gradle
-            ~/.gradle/caches
-          key: gradle
-      - name: Enable KVM
+            ios/Pods
+            test-app/ios/App/Pods
+          key: pods
+      - name: Cache node_modules
+        id: node-modules
+        uses: actions/cache@v4
+        with:
+          path: |
+            node_modules
+            test-app/node_modules
+          key: node-modules
+      - name: Cache Xcode DerivedData
+        uses: irgaly/xcode-cache@v1.7.2
+        with:
+          key: xcode-deriveddata
+          restore-keys: xcode-deriveddata
+      - name: Install Cocoapods
+        run: gem install cocoapods
+      - name: Pod Install
+        run: cd ios; pod install; cd -
+      - name: NPM Install
+        run: npm i
+      - name: Verify Plugin
+        run: npm run verify:web
+      - name: Verify iOS
+        env:
+          DEVELOPER_DIR: /Applications/Xcode_15.4.app
         run: |
-          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
-          sudo udevadm control --reload-rules
-          sudo udevadm trigger --name-match=kvm
-      - name: Cache AVD
-        uses: actions/cache@v4
-        id: avd-cache
-        with:
-          path: |
-            ~/.android/avd/*
-            ~/.android/adb*
-          key: avd-${{ matrix.api-level }}
-      - name: Test Android
-        uses: reactivecircus/android-emulator-runner@v2
-        with:
-          api-level: ${{ matrix.api-level }}
-          working-directory: android/
-          script: ./gradlew clean build test connectedAndroidTest
+          cd ios
+          xcodebuild \
+          -quiet \
+          -workspace Plugin.xcworkspace \
+          -scheme Plugin \
+          -sdk iphonesimulator \
+          -destination 'platform=iOS Simulator,name=iPhone 15,OS=17.4' \
+          test || exit 1
   Android:
     runs-on: ubuntu-latest
     strategy:
