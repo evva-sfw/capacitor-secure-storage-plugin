@@ -21,16 +21,14 @@ jobs:
             node_modules
             test-app/node_modules
           key: node-modules
+      - name: NPM Install
+        run: npm i
       - name: Test Web
         run: npm run verify:web
   iOS:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Install Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: lts/*
       - uses: ruby/setup-ruby@v1
         with:
           ruby-version: '3.3'
@@ -52,6 +50,17 @@ jobs:
             ios/Pods
             test-app/ios/App/Pods
           key: pods
+      - name: Cache Xcode DerivedData
+        uses: irgaly/xcode-cache@v1.7.2
+        with:
+          key: xcode-deriveddata
+          restore-keys: xcode-deriveddata
+      - name: Install Cocoapods
+        run: gem install cocoapods
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
       - name: Cache node_modules
         id: node-modules
         uses: actions/cache@v4
@@ -60,20 +69,11 @@ jobs:
             node_modules
             test-app/node_modules
           key: node-modules
-      - name: Cache Xcode DerivedData
-        uses: irgaly/xcode-cache@v1.7.2
-        with:
-          key: xcode-deriveddata
-          restore-keys: xcode-deriveddata
-      - name: Install Cocoapods
-        run: gem install cocoapods
       - name: Pod Install
         run: cd ios; pod install; cd -
       - name: NPM Install
         run: npm i
-      - name: Verify Plugin
-        run: npm run verify:web
-      - name: Verify iOS
+      - name: Test iOS
         env:
           DEVELOPER_DIR: /Applications/Xcode_15.4.app
         run: |
@@ -120,6 +120,20 @@ jobs:
             ~/.android/avd/*
             ~/.android/adb*
           key: avd-${{ matrix.api-level }}
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+      - name: Cache node_modules
+        id: node-modules
+        uses: actions/cache@v4
+        with:
+          path: |
+            node_modules
+            test-app/node_modules
+          key: node-modules
+      - name: NPM Install
+        run: npm i
       - name: Test Android
         uses: reactivecircus/android-emulator-runner@v2
         with:
