@@ -4,7 +4,7 @@ import { PreloadAllModules, RouterModule, type Routes } from '@angular/router';
 const routes: Routes = [
   {
     path: 'home',
-    loadChildren: async () => await import('./home/home.module').then((m) => m.HomePageModule),
+    loadChildren: async () => (await import('./home/home.module')).HomePageModule,
   },
   {
     path: '',

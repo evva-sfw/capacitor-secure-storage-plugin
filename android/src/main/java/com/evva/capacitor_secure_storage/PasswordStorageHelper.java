@@ -56,6 +56,8 @@ public class PasswordStorageHelper {
       );
     }
 
+    // Caution: on certain API 18+ devices an exception can occur when initializing PasswordStorageHelper_SDK18().
+    // In this case, we will use the second implementation of the helper:
     if (
       !isInitialized && passwordStorage instanceof PasswordStorageHelper_SDK18
     ) {
