@@ -21,7 +21,7 @@
         "build": "npm run clean && npm run docgen && tsc && rollup -c rollup.config.js",
         "clean": "rimraf ./dist",
         "watch": "tsc --watch",
-        "prepack": "npm i && npm run build"
+        "prepack": "npm ci && npm run build"
     },
     "license": "MIT",
     "devDependencies": {

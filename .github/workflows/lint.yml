@@ -25,5 +25,5 @@ jobs:
             node_modules
             test-app/node_modules
           key: node-modules
-      - run: npm i
+      - run: npm ci
       - run: npm run lint

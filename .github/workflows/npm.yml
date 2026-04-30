@@ -22,7 +22,7 @@ jobs:
             test-app/node_modules
           key: node-modules
       - name: NPM Install
-        run: npm i
+        run: npm ci
       - name: Check if git is clean
         uses: CatChen/check-git-status-action@bde80484b437cece974f79da735a5cd1dfdc9b0b # v1.4.4
         with:
